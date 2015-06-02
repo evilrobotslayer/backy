@@ -3,7 +3,11 @@
 # This script is designed to be run daily via cron and will generate 
 # daily and weekly tarball snapshots for the configured targets.
 #
-# It has *NOT* been written for POSIX `sh` compliance.
+# It has *NOT* been written for POSIX `sh` compliance.  Make sure your
+# cron runs jobs as bash, or explicitly execute bash when it runs.
+#
+# Example cron line:
+#  0 6 * * * /root/backups/bin/backup.sh > /dev/null 2>&1 
 # ------------------------------------------------------------------------
 # Copyright (c) 1999 Vivek Gite <vivek@nixcraft.com>
 # Copyright (c) 2015 George M. Grindlinger (georgeg@oit.rutgers.edu)
