@@ -24,7 +24,7 @@
 # Backup configuration directories
 # Set this to the location of "backup" directory heirarchy
 # Optionally, leave this blank if you plan on overriding all dirs
-BACKUP_BASE_DIR=~/backups
+BACKUP_BASE_DIR=~/src/backups
 BACKUP_CONF_DIR=$BACKUP_BASE_DIR/conf
 BACKUP_LOG_DIR=$BACKUP_BASE_DIR/log
 
@@ -43,8 +43,13 @@ BACKUP_EXPORT_DAY=Fri
 # Choose whether or not to age out and purge old daily backups
 # Daily backups older than this number of days will be deleted 
 # If less than 7, weekly exports will not occur
-# Unset or comment out to disable ageing out backups
-BACKUP_RETENTION=7
+# Unset or comment out to disable ageing out daily backups
+BACKUP_DAILY_RETENTION=7
+
+# Choose whether or not to age out and purge old weekly backups
+# Weekly backups older than this number of weeks will be deleted 
+# Unset or comment out to disable ageing out weekly backups
+BACKUP_WEEKLY_RETENTION=6
 
 # Define which, if any, compression algorithm to use
 # Valid options are bz2|gz|none - bz2 is default
@@ -161,12 +166,23 @@ export_weekly(){
         $ECHO -e "No files to export found!\nContinuing...\n"
     fi
 
-    # Determine if $BACKUP_RETENTION is set, and if so purge the old backups
+    # Determine if $BACKUP_DAILY_RETENTION is set, and if so purge the old daily backups
     # xargs will not run if find produces no output
-    if [[ ! -z $BACKUP_RETENTION ]]; then
-        $ECHO -e "BACKUP_RETENTION set to $BACKUP_RETENTION days\nPurging old backups..."
-        $FIND $BACKUP_DAILY_DIR -mindepth 1 -maxdepth 1 -name $BACKUP_FILE_PREFIX\* -type f -daystart -mtime +$BACKUP_RETENTION -print0 | \
-        $XARGS -0r $RM
+    if [[ ! -z $BACKUP_DAILY_RETENTION ]]; then
+        $ECHO -e "BACKUP DAILY RETENTION set to $BACKUP_DAILY_RETENTION days\nPurging old daily backups..."
+        $FIND $BACKUP_DAILY_DIR -mindepth 1 -maxdepth 1 -name $BACKUP_FILE_PREFIX\* -type f -daystart -mtime +$BACKUP_DAILY_RETENTION -print0 | \
+        $XARGS -0r $RM -v
+        $ECHO 
+    fi
+
+    # Determine if $BACKUP_WEEKLY_RETENTION is set, and if so purge the old weekly backups
+    # xargs will not run if find produces no output
+    if [[ ! -z $BACKUP_WEEKLY_RETENTION ]]; then
+        $ECHO -e "BACKUP WEEKLY RETENTION set to $BACKUP_WEEKLY_RETENTION weeks\nPurging old weekly backups..."
+        # `find` works in units of days, so convert # of weeks into # of days
+        $FIND $BACKUP_WEEKLY_DIR -mindepth 1 -maxdepth 1 -name $BACKUP_FILE_PREFIX\* -type f -daystart -mtime +$(expr $BACKUP_WEEKLY_RETENTION \* 7) -print0 | \
+        $XARGS -0r $RM -v
+        $ECHO  
     fi
 }
 
@@ -177,7 +193,7 @@ backup(){
         TAR_ARGS="-X $BACKUP_EXCLUDE_CONF $TAR_ARGS"
 
     # Commence actual backup!
-    $ECHO "Backing up files to tar archive in $BACKUP_DAILY_DIR"
+    $ECHO "Backing up files to tar archive with compression '$BACKUP_COMPRESSION' to: $BACKUP_DAILY_DIR"
 
     # Preserve current directory; we're going to cwd to '/' so that targets
     # are stored with relative names from '/' instead of absolute names.
